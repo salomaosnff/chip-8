@@ -1,0 +1,18 @@
+# Arquivos gerados pelo Cargo
+/target/
+
+# Arquivos de dependências
+Cargo.lock
+
+# Arquivos de compilação
+**/*.rs.bk
+
+# Arquivos de configuração do editor
+.vscode/
+.idea/
+
+# Arquivos de log
+*.log
+
+# Arquivos temporários
+*.tmp
