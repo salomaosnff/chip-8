@@ -56,6 +56,14 @@ fn main() {
         .clone();
     let background = to_color(args.option("background").unwrap_or("#000000".to_string()));
     let foreground = to_color(args.option("foreground").unwrap_or("#FFFFFF".to_string()));
+    let volume = args
+        .option("volume")
+        .unwrap_or("0.25".to_string())
+        .parse::<f32>()
+        .unwrap_or_else(|_| {
+            println!("Invalid volume value");
+            exit(1);
+        });
     let clock = args
         .option("clock")
         .unwrap_or("500".to_string())
@@ -122,7 +130,7 @@ fn main() {
                 SquareWave {
                     phase_inc: (440.0 * 2.0) / spec.freq as f32,
                     phase: 0.0,
-                    volume: 0.25,
+                    volume,
                 }
             })
             .unwrap();
