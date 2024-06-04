@@ -169,7 +169,7 @@ fn main() {
                     let bit = byte >> (7 - x % 8) & 1;
 
                     let color = if bit == 0 {
-                        // Simula o efeito de fade dos monitores CRTgit i
+                        // Simula o efeito de fade dos monitores CRT
                         Color::RGBA(background.r, background.g, background.b, 48)
                     } else {
                         foreground
