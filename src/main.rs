@@ -6,7 +6,7 @@ use args::Args;
 use chip8::{Chip8, KeyMask};
 use sdl2::audio::AudioCallback;
 use sdl2::pixels::Color;
-use sdl2::rect::{Point, Rect};
+use sdl2::rect::Rect;
 use sdl2::Sdl;
 
 mod args;
@@ -45,8 +45,25 @@ fn to_color(hex: String) -> Color {
     Color::RGB(r, g, b)
 }
 
+fn help() {
+    println!("Usage: chip8 <rom> [options]");
+    println!();
+    println!("Options:");
+    println!("  --help                Show this help message");
+    println!("  --background=<color>  Background color (default: #000000)");
+    println!("  --foreground=<color>  Foreground color (default: #FFFFFF)");
+    println!("  --clock=<hz>          Clock speed (default: 500)");
+    println!("  --audio-freq=<hz>     Audio frequency (default: 880)");
+    println!("  --volume=<volume>     Audio volume (default: 0.25)");
+}
+
 fn main() {
     let args = Args::from(std::env::args());
+
+    if args.has_option("help") || args.positional(0).is_none() {
+        return help();
+    }
+
     let rom = args
         .positional(0)
         .unwrap_or_else(|| {
@@ -56,20 +73,20 @@ fn main() {
         .clone();
     let background = to_color(args.option("background").unwrap_or("#000000".to_string()));
     let foreground = to_color(args.option("foreground").unwrap_or("#FFFFFF".to_string()));
-    let volume = args
-        .option("volume")
-        .unwrap_or("0.25".to_string())
-        .parse::<f32>()
-        .unwrap_or_else(|_| {
-            println!("Invalid volume value");
-            exit(1);
-        });
     let clock = args
         .option("clock")
         .unwrap_or("500".to_string())
         .parse::<u32>()
         .unwrap_or_else(|_| {
             println!("Invalid clock value");
+            exit(1);
+        });
+    let audio_freq = args
+        .option("audio-freq")
+        .unwrap_or("880".to_string())
+        .parse::<f32>()
+        .unwrap_or_else(|_| {
+            println!("Invalid audio frequency value");
             exit(1);
         });
 
@@ -128,9 +145,9 @@ fn main() {
             .open_playback(None, &desired_spec, |spec| {
                 // initialize the audio callback
                 SquareWave {
-                    phase_inc: (440.0 * 2.0) / spec.freq as f32,
+                    phase_inc: audio_freq / spec.freq as f32,
                     phase: 0.0,
-                    volume,
+                    volume: 0.25,
                 }
             })
             .unwrap();
@@ -140,6 +157,17 @@ fn main() {
         canvas.clear();
 
         'running: loop {
+            // Update Audio
+            if t2_cpu.lock().unwrap().sound_timer > 0
+                && device.status() != sdl2::audio::AudioStatus::Playing
+            {
+                device.resume();
+            } else if t2_cpu.lock().unwrap().sound_timer == 0
+                && device.status() == sdl2::audio::AudioStatus::Playing
+            {
+                device.pause();
+            }
+
             for event in event_pump.poll_iter() {
                 match event {
                     sdl2::event::Event::Quit { .. } => {
@@ -199,17 +227,6 @@ fn main() {
 
             // Atualiza o canvas
             canvas.present();
-
-            // Update Audio
-            if t2_cpu.lock().unwrap().sound_timer > 0
-                && device.status() != sdl2::audio::AudioStatus::Playing
-            {
-                device.resume();
-            } else if t2_cpu.lock().unwrap().sound_timer == 0
-                && device.status() == sdl2::audio::AudioStatus::Playing
-            {
-                device.pause();
-            }
         }
     });
 
